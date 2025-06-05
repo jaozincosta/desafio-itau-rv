@@ -1,0 +1,13 @@
+# Ignore arquivos e pastas do Visual Studio
+.vs/
+bin/
+obj/
+*.user
+*.suo
+*.vspscc
+*.vssscc
+
+# Ignore arquivos do sistema
+*.log
+*.DS_Store
+Thumbs.db
