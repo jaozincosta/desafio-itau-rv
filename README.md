@@ -1,6 +1,6 @@
 # Desafio Técnico - Renda Variável (Itaú)
 
-Este repositório contém a solução para o desafio técnico proposto pelo Itaú Unibanco para a área de Renda Variável (vaga Júnior).
+Este repositório contém a solução para o desafio técnico proposto pelo Itaú Unibanco.
 
 ---
 
@@ -33,7 +33,9 @@ O repositório foi organizado da seguinte forma:
 │   └── CalculoPrecoMedioServiceTests.cs   # Casos de teste para preço médio
 │
 ├── Investimentos.RendaVariavel.Worker/    # Worker .NET simulando consumo Kafka
-│   └── Worker.cs                           # Simulação com retry e idempotência
+│   ├── Program.cs                          # Host configurado para rodar Worker
+│   ├── Worker.cs                           # Simulação com retry e idempotência
+│   └── appsettings.json
 ```
 
 ---
@@ -123,10 +125,11 @@ Foi implementado um Worker .NET (`Investimentos.RendaVariavel.Worker`) que simul
 
 ### Estratégias aplicadas:
 
-* **Retry** em caso de falha no banco
-* **Idempotência**: evita salvar cotações duplicadas para mesmo Ativo e DataHora
+* ✅ Retry: em caso de falha no banco (ex: FK, rede)
+* ✅ Idempotência: evita salvar cotações duplicadas (mesmo Ativo + horário)
+* ✅ Logs detalhados com status de cada tentativa
 
-A simulação é suficiente para validar a lógica exigida no item 7, mesmo sem Kafka real.
+O Worker foi testado com sucesso, salvando cotações válidas e ignorando duplicadas.
 
 ---
 
