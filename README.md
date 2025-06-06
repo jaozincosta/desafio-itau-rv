@@ -1,6 +1,6 @@
-﻿# Desafio Técnico - Renda Variável (Itaú)
+# Desafio Técnico - Renda Variável (Itaú)
 
-Este repositório contém a solução para o desafio técnico proposto pelo Itaú Unibanco.
+Este repositório contém a solução para o desafio técnico proposto pelo Itaú Unibanco para a área de Renda Variável (vaga Júnior).
 
 ---
 
@@ -14,6 +14,7 @@ Este repositório contém a solução para o desafio técnico proposto pelo Ita�
 * [x] Cálculo de preço médio ponderado
 * [x] Testes unitários com xUnit
 * [x] Teste mutante manual
+* [x] Worker Service simulando consumo Kafka
 
 ---
 
@@ -28,8 +29,11 @@ O repositório foi organizado da seguinte forma:
 │   ├── Services/                           # Regras de negócio
 │   └── Program.cs                          # Execução via console
 │
-├── Investimentos.RendaVariavel.Tests/     # Projeto de testes unitários com xUnit
+├── Investimentos.RendaVariavel.Tests/     # Testes unitários com xUnit
 │   └── CalculoPrecoMedioServiceTests.cs   # Casos de teste para preço médio
+│
+├── Investimentos.RendaVariavel.Worker/    # Worker .NET simulando consumo Kafka
+│   └── Worker.cs                           # Simulação com retry e idempotência
 ```
 
 ---
@@ -103,4 +107,31 @@ Resultado esperado: o teste `DeveCalcularPrecoMedioCorretamente` falhou, confirm
 
 ---
 
+## 7. Worker Service - Kafka Simulado
 
+Foi implementado um Worker .NET (`Investimentos.RendaVariavel.Worker`) que simula o consumo de mensagens Kafka para cotações. As mensagens são processadas como se fossem recebidas por uma fila externa, e gravadas no banco de dados.
+
+### Mensagem simulada:
+
+```json
+{
+  "AtivoId": 1,
+  "PrecoUnitario": 11.25,
+  "DataHora": "2025-06-06T12:00:00"
+}
+```
+
+### Estratégias aplicadas:
+
+* **Retry** em caso de falha no banco
+* **Idempotência**: evita salvar cotações duplicadas para mesmo Ativo e DataHora
+
+A simulação é suficiente para validar a lógica exigida no item 7, mesmo sem Kafka real.
+
+---
+
+## Próximos passos
+
+* [ ] Implementar Circuit Breaker e fallback com resiliência
+* [ ] Estratégia de escalabilidade da aplicação (teórico)
+* [ ] API RESTful com OpenAPI (Swagger) documentando endpoints
