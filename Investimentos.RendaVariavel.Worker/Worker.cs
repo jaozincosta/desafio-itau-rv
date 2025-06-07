@@ -1,62 +1,75 @@
 using System;
 using System.Linq;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using InvestimentosRendaVariavel.DbContexto;
 using InvestimentosRendaVariavel.Models;
+using InvestimentosRendaVariavel.Services;
 
 namespace InvestimentosRendaVariavel.Worker
 {
     public class Worker : BackgroundService
     {
         private readonly ILogger<Worker> _logger;
+        private readonly CotacaoExternaService _cotacaoService;
 
-        public Worker(ILogger<Worker> logger)
+        public Worker(ILogger<Worker> logger, CotacaoExternaService cotacaoService)
         {
             _logger = logger;
+            _cotacaoService = cotacaoService;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            var mensagensSimuladas = new List<CotacaoMensagem>
+            var mensagensSimuladas = new[]
             {
                 new CotacaoMensagem { AtivoId = 1, PrecoUnitario = 10.50m, DataHora = DateTime.Now.AddSeconds(-10) },
                 new CotacaoMensagem { AtivoId = 2, PrecoUnitario = 11.25m, DataHora = DateTime.Now.AddSeconds(-5) },
-                new CotacaoMensagem { AtivoId = 1, PrecoUnitario = 10.75m, DataHora = DateTime.Now } // duplicada simulada
+                new CotacaoMensagem { AtivoId = 1, PrecoUnitario = 10.75m, DataHora = DateTime.Now }
             };
 
-            foreach (var message in mensagensSimuladas)
+            foreach (var msg in mensagensSimuladas)
             {
                 try
                 {
-                    using var context = new InvestimentoContext();
-
-                    var jaExiste = context.Cotacoes.Any(c =>
-                        c.AtivoId == message.AtivoId && c.DataHora == message.DataHora);
-
-                    if (!jaExiste)
+                    var precoApi = await _cotacaoService.ObterUltimaCotacaoAsync("ITUB4"); 
+                    if (precoApi.HasValue)
                     {
-                        context.Cotacoes.Add(new Cotacao
-                        {
-                            AtivoId = message.AtivoId,
-                            PrecoUnitario = message.PrecoUnitario,
-                            DataHora = message.DataHora
-                        });
-
-                        await context.SaveChangesAsync(stoppingToken);
-                        _logger.LogInformation($"[OK] Cotação salva: AtivoId={message.AtivoId}, Preço={message.PrecoUnitario}");
+                        _logger.LogInformation("[API] Cotação externa: {Preco}", precoApi.Value);
                     }
                     else
                     {
-                        _logger.LogInformation("[IGNORADA] Cotação duplicada para mesmo Ativo e horário.");
+                        _logger.LogWarning("[FALLBACK] Não foi possível obter cotação externa.");
+                    }
+
+                    using var context = new InvestimentoContext();
+
+                    var existe = context.Cotacoes.Any(c =>
+                        c.AtivoId == msg.AtivoId && c.DataHora == msg.DataHora);
+
+                    if (!existe)
+                    {
+                        context.Cotacoes.Add(new Cotacao
+                        {
+                            AtivoId = msg.AtivoId,
+                            PrecoUnitario = msg.PrecoUnitario,
+                            DataHora = msg.DataHora
+                        });
+
+                        await context.SaveChangesAsync(stoppingToken);
+                        _logger.LogInformation("[OK] Cotação salva: AtivoId={AtivoId}, Preço={Preco}",
+                            msg.AtivoId, msg.PrecoUnitario);
+                    }
+                    else
+                    {
+                        _logger.LogInformation("[SKIP] Cotação duplicada ignorada.");
                     }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Erro ao salvar cotação. Retentando em 2s...");
+                    _logger.LogError(ex, "Erro ao processar cotação. Tentando novamente em 2s...");
                     await Task.Delay(2000, stoppingToken);
                 }
 
