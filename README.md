@@ -15,6 +15,8 @@ Este repositório contém a solução para o desafio técnico proposto pelo Ita�
 * [x] Testes unitários com xUnit
 * [x] Teste mutante manual
 * [x] Worker Service simulando consumo Kafka
+* [x] Circuit Breaker e fallback com Polly
+* [x] Estratégia de escalabilidade documentada
 
 ---
 
@@ -133,8 +135,58 @@ O Worker foi testado com sucesso, salvando cotações válidas e ignorando dupli
 
 ---
 
+## 8. Engenharia do Caos
+
+Foi implementado suporte a resiliência no serviço de cotações externas com:
+
+* ✅ Retry: até 3 tentativas com Polly
+* ✅ Circuit Breaker: corta chamadas após falhas consecutivas
+* ✅ Fallback: valor nulo e log de erro são aplicados quando a API externa falha
+* ✅ Observabilidade: logs detalhados de cada tentativa, abertura do circuito e fallback
+
+Simulações com URL inválida e indisponibilidade confirmaram a robustez do serviço.
+
+---
+
+## 9. Escalabilidade e Performance
+
+### Auto-scaling horizontal
+
+Para garantir resiliência e atender o aumento de demanda (ex: 1 milhão de operações/dia), é recomendado aplicar escalabilidade horizontal (auto-scaling) no serviço:
+
+- **Kubernetes (HPA)**: define réplicas automáticas com base no uso de CPU/memória. Exemplo:
+  ```yaml
+  apiVersion: autoscaling/v2
+  kind: HorizontalPodAutoscaler
+  spec:
+    minReplicas: 2
+    maxReplicas: 10
+    metrics:
+      - type: Resource
+        resource:
+          name: cpu
+          target:
+            type: Utilization
+            averageUtilization: 70
+  ```
+- **Azure App Service**: permite escalonamento por métricas via portal (ex: CPU > 70%).
+- **AWS ECS com Fargate**: escalonamento automático por CPU, memória ou tamanho da fila (mensagens pendentes).
+
+O serviço deve ser **stateless** para permitir múltiplas instâncias paralelas, compartilhando a base de dados e recursos externos (como Kafka ou cache distribuído).
+
+### Balanceamento de Carga: Round-robin vs Latência
+
+- **Round-robin**:
+  - Requisições são distribuídas de forma sequencial entre instâncias.
+  - Simples, eficaz em cenários com cargas uniformes.
+- **Baseado em latência**:
+  - Envia a requisição para a instância com menor tempo de resposta.
+  - Ideal quando há variação de carga ou performance entre instâncias.
+
+> **Recomendação**: utilizar **balanceamento por latência** em produção com tráfego elevado, para otimizar resposta e eficiência de uso de recursos.
+
+---
+
 ## Próximos passos
 
-* [ ] Implementar Circuit Breaker e fallback com resiliência
-* [ ] Estratégia de escalabilidade da aplicação (teórico)
 * [ ] API RESTful com OpenAPI (Swagger) documentando endpoints
