@@ -17,6 +17,7 @@ Este repositório contém a solução para o desafio técnico proposto pelo Ita�
 * [x] Worker Service simulando consumo Kafka
 * [x] Circuit Breaker e fallback com Polly
 * [x] Estratégia de escalabilidade documentada
+* [x] API RESTful com OpenAPI (Swagger) documentada
 
 ---
 
@@ -25,19 +26,26 @@ Este repositório contém a solução para o desafio técnico proposto pelo Ita�
 O repositório foi organizado da seguinte forma:
 
 ```
-├── Investimentos.RendaVariavel/           # Projeto principal (.NET 8)
-│   ├── Models/                             # Entidades mapeadas com [Table] e [Column]
-│   ├── DbContext/                          # EF Core com MySQL
-│   ├── Services/                           # Regras de negócio
-│   └── Program.cs                          # Execução via console
+├── Investimentos.RendaVariavel/               # Projeto principal (.NET 8)
+│   ├── Models/                             # Entidades EF Core com DataAnnotations
+│   ├── DbContext/                          # InvestimentoContext.cs
+│   ├── Services/                           # Regras de negócio (Cálculo, Resiliência)
+│   └── Program.cs
 │
-├── Investimentos.RendaVariavel.Tests/     # Testes unitários com xUnit
-│   └── CalculoPrecoMedioServiceTests.cs   # Casos de teste para preço médio
+├── Investimentos.RendaVariavel.Tests/         # Testes unitários com xUnit
+│   └── CalculoPrecoMedioServiceTests.cs
 │
-├── Investimentos.RendaVariavel.Worker/    # Worker .NET simulando consumo Kafka
-│   ├── Program.cs                          # Host configurado para rodar Worker
-│   ├── Worker.cs                           # Simulação com retry e idempotência
+├── Investimentos.RendaVariavel.Worker/        # Simulação de Kafka com Worker Service
+│   ├── Program.cs
+│   ├── Worker.cs
 │   └── appsettings.json
+│
+└── Investimentos.RendaVariavel.API/           # API RESTful com Swagger
+    ├── Controllers/
+    │   ├── CotacoesController.cs
+    │   └── InvestimentosController.cs
+    ├── Program.cs
+    └── openapi.yaml                        # Documentação OpenAPI 3.0
 ```
 
 ---
@@ -131,8 +139,6 @@ Foi implementado um Worker .NET (`Investimentos.RendaVariavel.Worker`) que simul
 * ✅ Idempotência: evita salvar cotações duplicadas (mesmo Ativo + horário)
 * ✅ Logs detalhados com status de cada tentativa
 
-O Worker foi testado com sucesso, salvando cotações válidas e ignorando duplicadas.
-
 ---
 
 ## 8. Engenharia do Caos
@@ -154,39 +160,76 @@ Simulações com URL inválida e indisponibilidade confirmaram a robustez do ser
 
 Para garantir resiliência e atender o aumento de demanda (ex: 1 milhão de operações/dia), é recomendado aplicar escalabilidade horizontal (auto-scaling) no serviço:
 
-- **Kubernetes (HPA)**: define réplicas automáticas com base no uso de CPU/memória. Exemplo:
-  ```yaml
-  apiVersion: autoscaling/v2
-  kind: HorizontalPodAutoscaler
-  spec:
-    minReplicas: 2
-    maxReplicas: 10
-    metrics:
-      - type: Resource
-        resource:
-          name: cpu
-          target:
-            type: Utilization
-            averageUtilization: 70
-  ```
-- **Azure App Service**: permite escalonamento por métricas via portal (ex: CPU > 70%).
-- **AWS ECS com Fargate**: escalonamento automático por CPU, memória ou tamanho da fila (mensagens pendentes).
+* **Kubernetes (HPA)**: define réplicas automáticas com base no uso de CPU/memória. Exemplo:
+
+```yaml
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+spec:
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+```
+
+* **Azure App Service**: permite escalonamento por métricas via portal (ex: CPU > 70%).
+* **AWS ECS com Fargate**: escalonamento automático por CPU, memória ou tamanho da fila (mensagens pendentes).
 
 O serviço deve ser **stateless** para permitir múltiplas instâncias paralelas, compartilhando a base de dados e recursos externos (como Kafka ou cache distribuído).
 
 ### Balanceamento de Carga: Round-robin vs Latência
 
-- **Round-robin**:
-  - Requisições são distribuídas de forma sequencial entre instâncias.
-  - Simples, eficaz em cenários com cargas uniformes.
-- **Baseado em latência**:
-  - Envia a requisição para a instância com menor tempo de resposta.
-  - Ideal quando há variação de carga ou performance entre instâncias.
+* **Round-robin**:
+
+  * Requisições são distribuídas de forma sequencial entre instâncias.
+  * Simples, eficaz em cenários com cargas uniformes.
+* **Baseado em latência**:
+
+  * Envia a requisição para a instância com menor tempo de resposta.
+  * Ideal quando há variação de carga ou performance entre instâncias.
 
 > **Recomendação**: utilizar **balanceamento por latência** em produção com tráfego elevado, para otimizar resposta e eficiência de uso de recursos.
 
 ---
 
-## Próximos passos
+## 10. API RESTful e Documentação OpenAPI
 
-* [ ] API RESTful com OpenAPI (Swagger) documentando endpoints
+### Endpoints implementados:
+
+| Método | Rota                                           | Descrição                             |
+| ------ | ---------------------------------------------- | ------------------------------------- |
+| GET    | `/api/Cotacoes/{codigoAtivo}`                  | Última cotação de um ativo            |
+| GET    | `/api/Investimentos/preco-medio`               | Preço médio de um ativo por usuário   |
+| GET    | `/api/Investimentos/posicao/{usuarioId}`       | Posição de um usuário                 |
+| GET    | `/api/Investimentos/corretagens/{usuarioId}`   | Total de corretagem de um usuário     |
+| GET    | `/api/Investimentos/ranking/top10-posicoes`    | Top 10 usuários por volume de posição |
+| GET    | `/api/Investimentos/ranking/top10-corretagens` | Top 10 usuários por corretagem paga   |
+| GET    | `/api/Investimentos/corretagem`                | Corretagem total da corretora         |
+
+### Documentação Swagger
+
+* Acessível em `http://localhost:5030/swagger`
+* Formato: OpenAPI 3.0
+* Arquivo: `openapi.yaml`
+
+---
+
+## Como Rodar
+
+```bash
+# Restaurar pacotes
+dotnet restore
+
+# Rodar testes
+dotnet test
+
+# Rodar API com Swagger
+dotnet run --project ./Investimentos.RendaVariavel.API
+```
+
+---
