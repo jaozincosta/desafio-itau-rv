@@ -1,0 +1,85 @@
+openapi: 3.0.1
+info:
+  title: Investimentos Renda Variável - API
+  description: API RESTful para operações e consultas de investimentos em renda variável.
+  version: v1
+servers:
+  - url: http://localhost:5030
+paths:
+  /api/Cotacoes/{codigoAtivo}:
+    get:
+      summary: Obter última cotação de um ativo
+      parameters:
+        - name: codigoAtivo
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Cotação atual retornada com sucesso
+
+  /api/Investimentos/preco-medio:
+    get:
+      summary: Consultar preço médio por ativo para um usuário
+      parameters:
+        - name: usuarioId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: ativoId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Preço médio retornado com sucesso
+
+  /api/Investimentos/posicao/{usuarioId}:
+    get:
+      summary: Consultar a posição de um cliente
+      parameters:
+        - name: usuarioId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Lista de posições
+
+  /api/Investimentos/corretagens/{usuarioId}:
+    get:
+      summary: Ver total de corretagem paga por um usuário
+      parameters:
+        - name: usuarioId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Total de corretagem
+
+  /api/Investimentos/corretagem:
+    get:
+      summary: Ver total global de corretagens arrecadadas
+      responses:
+        '200':
+          description: Total global
+
+  /api/Investimentos/ranking/top10-posicoes:
+    get:
+      summary: Obter Top 10 usuários com maiores posições
+      responses:
+        '200':
+          description: Lista dos 10 usuários com maiores posições
+
+  /api/Investimentos/ranking/top10-corretagens:
+    get:
+      summary: Obter Top 10 clientes que mais pagaram corretagem
+      responses:
+        '200':
+          description: Lista dos 10 clientes que mais pagaram corretagem

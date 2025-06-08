@@ -1,0 +1,6 @@
+@Investimentos.RendaVariavel.API_HostAddress = http://localhost:5030
+
+GET {{Investimentos.RendaVariavel.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
