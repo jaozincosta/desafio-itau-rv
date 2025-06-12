@@ -1,6 +1,14 @@
-# Desafio Técnico - Renda Variável (Itaú)
+# Desafio Técnico - Itaú Unibanco
 
-Este repositório contém a solução para o desafio técnico proposto pelo Itaú Unibanco.
+Este projeto foi desenvolvido como desafio técnico proposto pelo Itaú Unibanco. Ele simula uma aplicação de controle de investimentos, contemplando funcionalidades de cálculo de posições e preço médio, consulta de cotações e exposição de APIs RESTful.
+
+O sistema é composto por:
+
+Console App: exibe o resumo de investimentos diretamente via terminal.
+
+Worker Service: simula consumo de fila Kafka para cotações, com suporte a retry, idempotência, fallback e circuit breaker.
+
+API RESTful: expõe endpoints de consulta de posição, corretagens, ranking e cotações, com documentação Swagger em OpenAPI 3.0.
 
 ---
 
