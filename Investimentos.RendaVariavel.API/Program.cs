@@ -1,11 +1,24 @@
 using Microsoft.OpenApi.Models;
+using Microsoft.EntityFrameworkCore;
 using InvestimentosRendaVariavel.Services;
+using InvestimentosRendaVariavel.DbContexto;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Adiciona serviços da aplicação
+//Adiciona serviços da aplicação
 builder.Services.AddControllers();
 builder.Services.AddHttpClient<CotacaoExternaService>();
+
+//Adiciona o DbContext (ajuste a connection string conforme necessário)
+builder.Services.AddDbContext<InvestimentoContext>(options =>
+    options.UseMySql(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        ServerVersion.AutoDetect(builder.Configuration.GetConnectionString("DefaultConnection"))
+    )
+);
+
+//Registra o InvestimentoService
+builder.Services.AddScoped<InvestimentoService>();
 
 // Configura Swagger
 builder.Services.AddEndpointsApiExplorer();
@@ -20,7 +33,7 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
-// Configura pipeline HTTP
+//Configura pipeline HTTP
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

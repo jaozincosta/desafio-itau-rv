@@ -1,37 +1,33 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.EntityFrameworkCore;
 using InvestimentosRendaVariavel.DbContexto;
 using InvestimentosRendaVariavel.Services;
+using System;
+using System.Collections.Generic;
 
 class Program
 {
     static void Main(string[] args)
     {
-        using var context = new InvestimentoContext();
-        var service = new InvestimentoService(context);
+        // Configura DI
+        var serviceCollection = new ServiceCollection();
+        serviceCollection.AddDbContext<InvestimentoContext>(options =>
+            options.UseMySql(
+                "server=localhost;database=investimentosdb;user=root;password=1234",
+                ServerVersion.AutoDetect("server=localhost;database=investimentosdb;user=root;password=1234")
+            ));
+
+        serviceCollection.AddScoped<InvestimentoService>();
+
+        var serviceProvider = serviceCollection.BuildServiceProvider();
+
+        using var scope = serviceProvider.CreateScope();
+        var service = scope.ServiceProvider.GetRequiredService<InvestimentoService>();
 
         int usuarioId = 1;
         int ativoId = 1;
 
         ExibirResumoUsuario(service, usuarioId, ativoId);
-
-        // =============================
-        // Simulação: Cálculo de Preço Médio Ponderado
-        // =============================
-
-        /*
-        var calculadora = new CalculoPrecoMedioService();
-
-        var compras = new List<(int, decimal)>
-        {
-            (100, 10.00m),
-            (50, 12.00m),
-            (150, 9.50m)
-        };
-
-        var precoMedio = calculadora.CalcularPrecoMedio(compras);
-        Console.WriteLine($"\n[Simulação] Preço médio ponderado: R$ {precoMedio:F2}");
-        */
     }
 
     static void ExibirResumoUsuario(InvestimentoService service, int usuarioId, int ativoId)

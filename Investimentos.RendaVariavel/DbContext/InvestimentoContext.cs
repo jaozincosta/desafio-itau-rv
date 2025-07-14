@@ -2,22 +2,19 @@ using Microsoft.EntityFrameworkCore;
 using InvestimentosRendaVariavel.Models;
 
 namespace InvestimentosRendaVariavel.DbContexto
-
-
 {
     public class InvestimentoContext : DbContext
     {
+        public InvestimentoContext(DbContextOptions<InvestimentoContext> options)
+            : base(options)
+        {
+        }
+
         public DbSet<Usuario> Usuarios { get; set; }
         public DbSet<Ativo> Ativos { get; set; }
         public DbSet<Operacao> Operacoes { get; set; }
         public DbSet<Cotacao> Cotacoes { get; set; }
         public DbSet<Posicao> Posicoes { get; set; }
-
-        protected override void OnConfiguring(DbContextOptionsBuilder options)
-        {
-            options.UseMySql("server=localhost;database=investimentos_db;user=root;password=1234",
-                new MySqlServerVersion(new Version(8, 0, 25)));
-        }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

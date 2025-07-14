@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
 using InvestimentosRendaVariavel.DbContexto;
 using InvestimentosRendaVariavel.Models;
 using InvestimentosRendaVariavel.Services;
@@ -14,11 +15,16 @@ namespace InvestimentosRendaVariavel.Worker
     {
         private readonly ILogger<Worker> _logger;
         private readonly CotacaoExternaService _cotacaoService;
+        private readonly IServiceProvider _serviceProvider;
 
-        public Worker(ILogger<Worker> logger, CotacaoExternaService cotacaoService)
+        public Worker(
+            ILogger<Worker> logger,
+            CotacaoExternaService cotacaoService,
+            IServiceProvider serviceProvider)
         {
             _logger = logger;
             _cotacaoService = cotacaoService;
+            _serviceProvider = serviceProvider;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -26,7 +32,6 @@ namespace InvestimentosRendaVariavel.Worker
             var mensagensSimuladas = new[]
             {
                 new CotacaoMensagem { AtivoId = 1, PrecoUnitario = 10.50m, DataHora = DateTime.Now.AddSeconds(-10) },
-                new CotacaoMensagem { AtivoId = 2, PrecoUnitario = 11.25m, DataHora = DateTime.Now.AddSeconds(-5) },
                 new CotacaoMensagem { AtivoId = 1, PrecoUnitario = 10.75m, DataHora = DateTime.Now }
             };
 
@@ -34,7 +39,7 @@ namespace InvestimentosRendaVariavel.Worker
             {
                 try
                 {
-                    var precoApi = await _cotacaoService.ObterUltimaCotacaoAsync("ITUB4"); 
+                    var precoApi = await _cotacaoService.ObterUltimaCotacaoAsync("ITUB4");
                     if (precoApi.HasValue)
                     {
                         _logger.LogInformation("[API] Cotação externa: {Preco}", precoApi.Value);
@@ -44,7 +49,8 @@ namespace InvestimentosRendaVariavel.Worker
                         _logger.LogWarning("[FALLBACK] Não foi possível obter cotação externa.");
                     }
 
-                    using var context = new InvestimentoContext();
+                    using var scope = _serviceProvider.CreateScope();
+                    var context = scope.ServiceProvider.GetRequiredService<InvestimentoContext>();
 
                     var existe = context.Cotacoes.Any(c =>
                         c.AtivoId == msg.AtivoId && c.DataHora == msg.DataHora);

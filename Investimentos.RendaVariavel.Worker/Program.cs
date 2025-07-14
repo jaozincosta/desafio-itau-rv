@@ -1,13 +1,28 @@
+using System;
+using System.IO;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using InvestimentosRendaVariavel.Worker;
 using InvestimentosRendaVariavel.Services;
-using System.Net.Http;
+using InvestimentosRendaVariavel.DbContexto;
 
-var builder = Host.CreateApplicationBuilder(args);
+var builder = new ConfigurationBuilder()
+    .SetBasePath(Directory.GetCurrentDirectory())
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+    .Build();
 
-builder.Services.AddHttpClient<CotacaoExternaService>();
-builder.Services.AddHostedService<Worker>();
+var host = Host.CreateDefaultBuilder(args)
+    .ConfigureServices((context, services) =>
+    {
+        var connectionString = builder.GetConnectionString("DefaultConnection");
 
-var host = builder.Build();
+        services.AddHttpClient<CotacaoExternaService>();
+        services.AddDbContext<InvestimentoContext>(options =>
+            options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+        services.AddHostedService<Worker>();
+    })
+    .Build();
+
 host.Run();
