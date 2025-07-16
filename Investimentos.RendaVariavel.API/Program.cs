@@ -9,7 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddHttpClient<CotacaoExternaService>();
 
-//Adiciona o DbContext (ajuste a connection string conforme necessário)
+//Adiciona o DbContext
 builder.Services.AddDbContext<InvestimentoContext>(options =>
     options.UseMySql(
         builder.Configuration.GetConnectionString("DefaultConnection"),
